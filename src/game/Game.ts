@@ -73,6 +73,7 @@ export class Game {
 
     document.getElementById('btn-restart')!.addEventListener('click', () => this.newGame());
     document.getElementById('btn-place-done')!.addEventListener('click', () => this.switchToExplore());
+    document.getElementById('btn-switch-to-place')!.addEventListener('click', () => this.switchToPlace());
     document.getElementById('btn-gacha-crystal')!.addEventListener('click', () => this.gachaUI.toggle('crystal'));
     document.getElementById('btn-gacha-piece')!.addEventListener('click', () => this.gachaUI.toggle('piece'));
 
@@ -123,8 +124,9 @@ export class Game {
       [GameState.GAME_OVER]:   'GAME OVER',
     };
     this.hud.setStatus(labels[this.state]);
-    document.getElementById('btn-place-done')!.style.display =
-      this.state === GameState.PLACE_PIECE ? 'inline-block' : 'none';
+    const inPlace = this.state === GameState.PLACE_PIECE;
+    document.getElementById('btn-place-done')!.style.display    = inPlace ? 'inline-block' : 'none';
+    document.getElementById('btn-switch-to-place')!.style.display = inPlace ? 'none' : 'inline-block';
     this.updateDpad();
   }
 
@@ -229,6 +231,10 @@ export class Game {
 
   private handleSelectPiece(i: number): void {
     selectPiece(this.queue, i);
+    if (this.state === GameState.EXPLORE) {
+      this.switchToPlace();
+      return;
+    }
     this.pieceUI.render(this.queue);
   }
 
