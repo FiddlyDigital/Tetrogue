@@ -1,7 +1,9 @@
 import { Player } from '../entities/Player';
 import { ITEM_LABELS } from '../entities/Item';
+import { EquipSlot, GEAR_RARITY_COLOR, SLOT_LABEL } from '../entities/Gear';
 
 const MAX_MESSAGES = 7;
+const ALL_SLOTS = [EquipSlot.WEAPON, EquipSlot.ARMOR, EquipSlot.RING, EquipSlot.AMULET];
 
 export class HUD {
   private messages: string[] = [];
@@ -12,7 +14,10 @@ export class HUD {
     def: HTMLElement;
     gold: HTMLElement;
     depth: HTMLElement;
+    crystalShards: HTMLElement;
+    pieceShards: HTMLElement;
     inventory: HTMLElement;
+    equipment: HTMLElement;
     log: HTMLElement;
     seed: HTMLElement;
     statusMsg: HTMLElement;
@@ -20,16 +25,19 @@ export class HUD {
 
   constructor() {
     this.els = {
-      hp:        this.get('hud-hp'),
-      hpBar:     this.get('hud-hp-bar'),
-      atk:       this.get('hud-atk'),
-      def:       this.get('hud-def'),
-      gold:      this.get('hud-gold'),
-      depth:     this.get('hud-depth'),
-      inventory: this.get('hud-inventory'),
-      log:       this.get('hud-log'),
-      seed:      this.get('hud-seed'),
-      statusMsg: this.get('hud-status'),
+      hp:            this.get('hud-hp'),
+      hpBar:         this.get('hud-hp-bar'),
+      atk:           this.get('hud-atk'),
+      def:           this.get('hud-def'),
+      gold:          this.get('hud-gold'),
+      depth:         this.get('hud-depth'),
+      crystalShards: this.get('hud-crystal-shards'),
+      pieceShards:   this.get('hud-piece-shards'),
+      inventory:     this.get('hud-inventory'),
+      equipment:     this.get('hud-equipment'),
+      log:           this.get('hud-log'),
+      seed:          this.get('hud-seed'),
+      statusMsg:     this.get('hud-status'),
     };
   }
 
@@ -40,28 +48,40 @@ export class HUD {
   }
 
   update(player: Player, depth: number): void {
-    this.els.hp.textContent    = `${player.hp} / ${player.maxHp}`;
-    this.els.atk.textContent   = String(player.atk);
-    this.els.def.textContent   = String(player.def);
-    this.els.gold.textContent  = String(player.gold);
-    this.els.depth.textContent = String(depth);
+    this.els.hp.textContent            = `${player.hp} / ${player.maxHp}`;
+    this.els.atk.textContent           = String(player.atk);
+    this.els.def.textContent           = String(player.def);
+    this.els.gold.textContent          = String(player.gold);
+    this.els.depth.textContent         = String(depth);
+    this.els.crystalShards.textContent = String(player.crystalShards);
+    this.els.pieceShards.textContent   = String(player.pieceShards);
 
     const pct = Math.max(0, player.hp / player.maxHp) * 100;
-    this.els.hpBar.style.width = `${pct}%`;
+    this.els.hpBar.style.width      = `${pct}%`;
     this.els.hpBar.style.background = pct > 50 ? '#3a8' : pct > 25 ? '#a83' : '#a33';
 
     const inv = player.inventory;
     this.els.inventory.innerHTML = inv.length === 0
       ? '<span class="empty">empty</span>'
       : inv.map((t, i) => `<div class="inv-item">[${i+1}] ${ITEM_LABELS[t]}</div>`).join('');
+
+    this.els.equipment.innerHTML = ALL_SLOTS.map(slot => {
+      const gear = player.equipment[slot];
+      if (!gear) {
+        return `<div class="equip-slot empty-slot"><span class="slot-label">${SLOT_LABEL[slot]}</span> <span class="empty">—</span></div>`;
+      }
+      const color = GEAR_RARITY_COLOR[gear.rarity];
+      return `<div class="equip-slot" style="border-color:${color}20">
+        <span class="slot-label">${SLOT_LABEL[slot]}</span>
+        <span class="equip-name" style="color:${color}" title="${gear.description}">${gear.name}</span>
+      </div>`;
+    }).join('');
   }
 
   addMessage(msg: string): void {
     this.messages.push(msg);
     if (this.messages.length > MAX_MESSAGES) this.messages.shift();
-    this.els.log.innerHTML = this.messages
-      .map(m => `<div>${m}</div>`)
-      .join('');
+    this.els.log.innerHTML = this.messages.map(m => `<div>${m}</div>`).join('');
     this.els.log.scrollTop = this.els.log.scrollHeight;
   }
 

@@ -154,5 +154,6 @@ function itemLabel(t: ItemType): string {
   return {
     HEALTH_POTION: 'Health Potion', STRENGTH_SCROLL: 'Scroll',
     IRON_SHIELD: 'Shield', GOLD_PILE: 'Gold', BOMB: 'Bomb',
+    CRYSTAL_SHARD: 'Crystal Shard',
   }[t] ?? t;
 }

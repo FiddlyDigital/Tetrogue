@@ -19,9 +19,9 @@ export class EntityManager {
     return e;
   }
 
-  spawnItem(type: ItemType, x: number, y: number): Item {
-    const id = this.nextId++;
-    const item = createItem(type, x, y, id);
+  spawnItem(type: ItemType, x: number, y: number, value = 1): Item {
+    const id   = this.nextId++;
+    const item = createItem(type, x, y, id, value);
     this.items.set(id, item);
     return item;
   }
@@ -39,11 +39,12 @@ export class EntityManager {
     return undefined;
   }
 
+  itemsAt(x: number, y: number): Item[] {
+    return [...this.items.values()].filter(i => i.x === x && i.y === y);
+  }
+
   itemAt(x: number, y: number): Item | undefined {
-    for (const i of this.items.values()) {
-      if (i.x === x && i.y === y) return i;
-    }
-    return undefined;
+    return this.itemsAt(x, y)[0];
   }
 
   removeEnemy(id: number): void { this.enemies.delete(id); }

@@ -10,8 +10,8 @@ export interface PieceQueue {
   discardPile: PieceDef[];
 }
 
-export function createQueue(depth: number, rng: RNG): PieceQueue {
-  const drawPile = generatePool(depth, rng);
+export function createQueue(depth: number, rng: RNG, unlockedIds: Set<string> = new Set()): PieceQueue {
+  const drawPile = generatePool(depth, rng, unlockedIds);
   const visible: PieceDef[] = [];
   for (let i = 0; i < QUEUE_SIZE; i++) {
     const p = drawPile.shift();

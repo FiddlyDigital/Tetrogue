@@ -5,10 +5,11 @@ export interface Item {
   type: ItemType;
   x: number;
   y: number;
+  value: number;
 }
 
-export function createItem(type: ItemType, x: number, y: number, id: number): Item {
-  return { id, type, x, y };
+export function createItem(type: ItemType, x: number, y: number, id: number, value = 1): Item {
+  return { id, type, x, y, value };
 }
 
 export const ITEM_LABELS: Record<ItemType, string> = {
@@ -17,6 +18,7 @@ export const ITEM_LABELS: Record<ItemType, string> = {
   [ItemType.IRON_SHIELD]:      'Iron Shield',
   [ItemType.GOLD_PILE]:        'Gold Pile',
   [ItemType.BOMB]:             'Bomb',
+  [ItemType.CRYSTAL_SHARD]:    'Crystal Shard',
 };
 
 export const ITEM_COLORS: Record<ItemType, string> = {
@@ -25,4 +27,5 @@ export const ITEM_COLORS: Record<ItemType, string> = {
   [ItemType.IRON_SHIELD]:      '#8080c0',
   [ItemType.GOLD_PILE]:        '#f0d030',
   [ItemType.BOMB]:             '#404040',
+  [ItemType.CRYSTAL_SHARD]:    '#44eeff',
 };

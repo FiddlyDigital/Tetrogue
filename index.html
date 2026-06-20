@@ -26,42 +26,17 @@
       gap: 16px;
     }
 
-    header h1 {
-      font-size: 1.2rem;
-      color: #8af;
-      letter-spacing: 3px;
-    }
+    header h1 { font-size: 1.2rem; color: #8af; letter-spacing: 3px; }
+    #hud-status { font-size: 0.75rem; color: #888; flex: 1; }
+    #hud-seed   { font-size: 0.7rem; color: #555; }
 
-    #hud-status {
-      font-size: 0.75rem;
-      color: #888;
-      flex: 1;
-    }
+    .main { display: flex; flex: 1; overflow: hidden; }
 
-    #hud-seed {
-      font-size: 0.7rem;
-      color: #555;
-    }
+    /* ── Canvas ─────────────────────────────────────────────────── */
+    #canvas-wrap { position: relative; flex-shrink: 0; }
+    #game-canvas { display: block; max-width: 100%; cursor: crosshair; }
 
-    .main {
-      display: flex;
-      flex: 1;
-      overflow: hidden;
-    }
-
-    /* ── Canvas panel ──────────────────────────────────────────── */
-    #canvas-wrap {
-      position: relative;
-      flex-shrink: 0;
-    }
-
-    #game-canvas {
-      display: block;
-      max-width: 100%;
-      cursor: crosshair;
-    }
-
-    /* ── Sidebar ───────────────────────────────────────────────── */
+    /* ── Sidebar ────────────────────────────────────────────────── */
     #sidebar {
       width: 260px;
       flex-shrink: 0;
@@ -84,7 +59,7 @@
       margin-bottom: 4px;
     }
 
-    /* ── Stats ─────────────────────────────────────────────────── */
+    /* ── Stats ──────────────────────────────────────────────────── */
     .stats-grid {
       display: grid;
       grid-template-columns: auto 1fr;
@@ -94,26 +69,60 @@
 
     .stat-label { color: #556; }
     .stat-value { color: #bce; font-weight: bold; }
+    .stat-value.crystal { color: #44eeff; }
+    .stat-value.piece   { color: #a0e080; }
 
-    #hp-bar-wrap {
-      background: #222;
-      height: 6px;
+    #hp-bar-wrap { background: #222; height: 6px; border-radius: 3px; margin-top: 4px; }
+    #hud-hp-bar  { height: 6px; border-radius: 3px; transition: width 0.2s, background 0.2s; }
+
+    /* ── Gacha Buttons ──────────────────────────────────────────── */
+    .gacha-btns { display: flex; gap: 4px; }
+
+    .gacha-btn {
+      flex: 1;
+      padding: 5px 4px;
+      font-family: inherit;
+      font-size: 0.7rem;
       border-radius: 3px;
-      margin-top: 4px;
+      cursor: pointer;
+      letter-spacing: 1px;
+      border: 1px solid;
+      text-align: center;
     }
 
-    #hud-hp-bar {
-      height: 6px;
-      border-radius: 3px;
-      transition: width 0.2s, background 0.2s;
+    .gacha-btn-crystal {
+      background: #0d1e2a;
+      color: #44eeff;
+      border-color: #44eeff44;
     }
+    .gacha-btn-crystal:hover { background: #0d2535; }
 
-    /* ── Piece Queue ───────────────────────────────────────────── */
-    #piece-queue {
+    .gacha-btn-piece {
+      background: #0d2010;
+      color: #a0e080;
+      border-color: #a0e08044;
+    }
+    .gacha-btn-piece:hover { background: #0d2a15; }
+
+    /* ── Equipment ──────────────────────────────────────────────── */
+    #hud-equipment { display: flex; flex-direction: column; gap: 3px; }
+
+    .equip-slot {
       display: flex;
-      flex-direction: column;
+      align-items: center;
       gap: 6px;
+      font-size: 0.72rem;
+      padding: 3px 4px;
+      border: 1px solid #1e1e2e;
+      border-radius: 3px;
     }
+
+    .slot-label { color: #556; font-size: 0.65rem; min-width: 28px; }
+    .equip-name { font-size: 0.72rem; }
+    .empty-slot { opacity: 0.4; }
+
+    /* ── Piece Queue ────────────────────────────────────────────── */
+    #piece-queue { display: flex; flex-direction: column; gap: 6px; }
 
     .piece-card {
       background: #1e1e2e;
@@ -127,40 +136,21 @@
     .piece-card:hover { background: #252535; }
     .piece-card.selected { background: #222840; border-color: #60a0ff !important; }
 
-    .piece-label {
-      font-size: 0.7rem;
-      color: #8af;
-      letter-spacing: 1px;
-      margin-bottom: 6px;
-    }
+    .piece-label { font-size: 0.7rem; color: #8af; letter-spacing: 1px; margin-bottom: 6px; }
 
-    .piece-preview-grid {
-      position: relative;
-      margin: 0 auto;
-    }
-
-    .piece-preview-cell {
-      position: absolute;
-      border: 1px solid #111;
-    }
+    .piece-preview-grid { position: relative; margin: 0 auto; }
+    .piece-preview-cell { position: absolute; border: 1px solid #111; }
 
     .piece-dot {
       position: absolute;
-      width: 7px;
-      height: 7px;
+      width: 7px; height: 7px;
       border-radius: 50%;
-      top: 3px;
-      right: 3px;
+      top: 3px; right: 3px;
     }
-
     .enemy-dot { background: #e44; }
     .item-dot  { background: #fc0; left: 3px; }
 
-    .piece-controls {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
+    .piece-controls { display: flex; flex-direction: column; gap: 4px; }
 
     .piece-controls button {
       background: #252535;
@@ -173,101 +163,141 @@
       cursor: pointer;
       text-align: left;
     }
-
     .piece-controls button:hover { background: #333355; }
 
-    .piece-note {
-      font-size: 0.7rem;
-      color: #c8a;
-      padding: 2px 4px;
-    }
+    .piece-note { font-size: 0.7rem; color: #c8a; padding: 2px 4px; }
 
     #btn-place-done {
-      background: #1a3a1a;
-      color: #6f6;
-      border: 1px solid #4a4;
-      border-radius: 3px;
-      padding: 6px 10px;
-      font-family: inherit;
-      font-size: 0.8rem;
-      cursor: pointer;
-      display: none;
-      margin-top: 4px;
+      background: #1a3a1a; color: #6f6;
+      border: 1px solid #4a4; border-radius: 3px;
+      padding: 6px 10px; font-family: inherit; font-size: 0.8rem;
+      cursor: pointer; display: none; margin-top: 4px;
     }
-
     #btn-place-done:hover { background: #254025; }
 
-    /* ── Inventory ─────────────────────────────────────────────── */
-    #hud-inventory {
-      font-size: 0.75rem;
-      color: #acc;
-    }
-
-    #hud-inventory .inv-item {
-      padding: 2px 0;
-      border-bottom: 1px solid #1a1a2a;
-    }
-
+    /* ── Inventory ──────────────────────────────────────────────── */
+    #hud-inventory { font-size: 0.75rem; color: #acc; }
+    #hud-inventory .inv-item { padding: 2px 0; border-bottom: 1px solid #1a1a2a; }
     #hud-inventory .empty { color: #445; }
 
-    /* ── Message Log ───────────────────────────────────────────── */
+    /* ── Log ────────────────────────────────────────────────────── */
     #hud-log {
-      font-size: 0.72rem;
-      color: #9ab;
-      line-height: 1.5;
-      max-height: 130px;
-      overflow-y: auto;
-      flex: 1;
+      font-size: 0.72rem; color: #9ab;
+      line-height: 1.5; max-height: 130px; overflow-y: auto; flex: 1;
     }
-
     #hud-log div { border-bottom: 1px solid #1a1a24; padding: 1px 0; }
     #hud-log div:last-child { color: #cde; }
 
-    /* ── Game Over overlay ─────────────────────────────────────── */
+    /* ── Game Over ──────────────────────────────────────────────── */
     #game-over {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.85);
-      z-index: 100;
-      align-items: center;
-      justify-content: center;
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.85); z-index: 100;
+      align-items: center; justify-content: center;
     }
 
     .game-over-box {
-      background: #1a1a2a;
-      border: 2px solid #a44;
-      border-radius: 8px;
-      padding: 32px 48px;
-      text-align: center;
+      background: #1a1a2a; border: 2px solid #a44;
+      border-radius: 8px; padding: 32px 48px; text-align: center;
     }
-
-    .game-over-box h2 {
-      font-size: 2rem;
-      color: #e44;
-      letter-spacing: 4px;
-      margin-bottom: 12px;
-    }
-
-    .game-over-box p { color: #88a; margin-bottom: 6px; font-size: 0.9rem; }
+    .game-over-box h2 { font-size: 2rem; color: #e44; letter-spacing: 4px; margin-bottom: 12px; }
+    .game-over-box p  { color: #88a; margin-bottom: 6px; font-size: 0.9rem; }
 
     #btn-restart {
-      margin-top: 20px;
-      background: #1a3a1a;
-      color: #6f6;
-      border: 1px solid #4a4;
-      border-radius: 4px;
-      padding: 10px 24px;
-      font-family: inherit;
-      font-size: 0.9rem;
-      cursor: pointer;
-      letter-spacing: 2px;
+      margin-top: 20px; background: #1a3a1a; color: #6f6;
+      border: 1px solid #4a4; border-radius: 4px;
+      padding: 10px 24px; font-family: inherit; font-size: 0.9rem;
+      cursor: pointer; letter-spacing: 2px;
     }
-
     #btn-restart:hover { background: #254025; }
 
-    /* Keys legend */
-    .keys { font-size: 0.65rem; color: #446; margin-top: 8px; line-height: 1.6; }
+    /* ── Gacha Modal ────────────────────────────────────────────── */
+    #gacha-modal {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.8); z-index: 200;
+      align-items: center; justify-content: center;
+    }
+
+    .gacha-box {
+      background: #12121e;
+      border: 2px solid #335;
+      border-radius: 8px;
+      padding: 20px;
+      width: 360px;
+      max-width: 95vw;
+      position: relative;
+    }
+
+    .gacha-box h2 { font-size: 1rem; color: #8af; letter-spacing: 3px; margin-bottom: 12px; }
+
+    #gacha-close {
+      position: absolute; top: 10px; right: 14px;
+      background: none; border: none; color: #666;
+      font-size: 1.2rem; cursor: pointer; font-family: inherit;
+    }
+    #gacha-close:hover { color: #aaa; }
+
+    .gacha-tabs { display: flex; gap: 4px; margin-bottom: 14px; }
+
+    .gacha-tab {
+      flex: 1; padding: 6px; font-family: inherit; font-size: 0.75rem;
+      border: 1px solid #335; border-radius: 3px; cursor: pointer;
+      background: #1a1a2a; color: #889; letter-spacing: 1px;
+    }
+    .gacha-tab:hover { background: #222235; }
+    .gacha-tab.active { background: #1e2040; color: #aaf; border-color: #558; }
+
+    .gacha-panel { font-size: 0.8rem; }
+
+    .gacha-shard-row {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 10px; background: #1a1a2a;
+      padding: 8px 10px; border-radius: 4px;
+    }
+
+    .gacha-shard-label { color: #668; font-size: 0.72rem; }
+    .gacha-shard-count { font-size: 1rem; font-weight: bold; }
+    .gacha-shard-count.crystal { color: #44eeff; }
+    .gacha-shard-count.piece   { color: #a0e080; }
+
+    .gacha-cost-note { color: #556; font-size: 0.7rem; margin-bottom: 8px; }
+
+    .btn-pull {
+      width: 100%; padding: 9px; font-family: inherit; font-size: 0.82rem;
+      border-radius: 4px; cursor: pointer; letter-spacing: 2px;
+      margin-bottom: 10px; border: 1px solid;
+    }
+    .btn-pull:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    .btn-pull-crystal { background: #0a2030; color: #44eeff; border-color: #44eeff66; }
+    .btn-pull-crystal:not(:disabled):hover { background: #0d2a3d; }
+
+    .btn-pull-piece { background: #0a2015; color: #a0e080; border-color: #a0e08066; }
+    .btn-pull-piece:not(:disabled):hover { background: #0d2a1a; }
+
+    /* Result reveal */
+    #gacha-result { min-height: 80px; }
+
+    .gacha-result-box {
+      border: 2px solid #446; border-radius: 6px;
+      padding: 12px; text-align: center;
+    }
+
+    .gacha-result-rarity  { font-size: 0.65rem; letter-spacing: 3px; margin-bottom: 4px; }
+    .gacha-result-name    { font-size: 1.1rem; font-weight: bold; margin-bottom: 4px; }
+    .gacha-result-slot    { font-size: 0.7rem; color: #667; margin-bottom: 6px; }
+    .gacha-result-desc    { font-size: 0.8rem; color: #aac; margin-bottom: 4px; }
+    .gacha-result-note    { font-size: 0.7rem; color: #585; }
+    .gacha-error          { color: #c66; font-size: 0.8rem; padding: 12px; text-align: center; border-color: #644; }
+
+    @keyframes flash-in {
+      0%   { opacity: 0; transform: scale(0.9); }
+      60%  { opacity: 1; transform: scale(1.04); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+    .flash { animation: flash-in 0.35s ease-out forwards; }
+
+    /* Keys */
+    .keys { font-size: 0.65rem; color: #446; margin-top: 4px; line-height: 1.6; }
     .keys span { color: #668; }
   </style>
 </head>
@@ -280,7 +310,6 @@
   </header>
 
   <div class="main">
-
     <div id="canvas-wrap">
       <canvas id="game-canvas"></canvas>
     </div>
@@ -291,12 +320,29 @@
       <div>
         <div class="panel-title">Stats — Floor <span id="hud-depth">1</span></div>
         <div class="stats-grid">
-          <span class="stat-label">HP</span>  <span class="stat-value" id="hud-hp">20/20</span>
-          <span class="stat-label">ATK</span> <span class="stat-value" id="hud-atk">5</span>
-          <span class="stat-label">DEF</span> <span class="stat-value" id="hud-def">2</span>
-          <span class="stat-label">GOLD</span><span class="stat-value" id="hud-gold">0</span>
+          <span class="stat-label">HP</span>   <span class="stat-value" id="hud-hp">20/20</span>
+          <span class="stat-label">ATK</span>  <span class="stat-value" id="hud-atk">5</span>
+          <span class="stat-label">DEF</span>  <span class="stat-value" id="hud-def">2</span>
+          <span class="stat-label">GOLD</span> <span class="stat-value" id="hud-gold">0</span>
+          <span class="stat-label">⬡</span>    <span class="stat-value crystal" id="hud-crystal-shards">0</span>
+          <span class="stat-label">◈</span>    <span class="stat-value piece" id="hud-piece-shards">0</span>
         </div>
         <div id="hp-bar-wrap"><div id="hud-hp-bar" style="width:100%"></div></div>
+      </div>
+
+      <!-- Gacha buttons -->
+      <div>
+        <div class="panel-title">Gacha</div>
+        <div class="gacha-btns">
+          <button id="btn-gacha-crystal" class="gacha-btn gacha-btn-crystal">⬡ Crystal Pull (C)</button>
+          <button id="btn-gacha-piece"   class="gacha-btn gacha-btn-piece">◈ Piece Pull (V)</button>
+        </div>
+      </div>
+
+      <!-- Equipment -->
+      <div>
+        <div class="panel-title">Equipment</div>
+        <div id="hud-equipment"></div>
       </div>
 
       <!-- Piece Queue -->
@@ -320,20 +366,57 @@
 
       <!-- Keys -->
       <div class="keys">
-        <span>PLACE:</span> click map · R rotate · X discard · 1/2/3 select<br>
-        <span>EXPLORE:</span> WASD/↑↓←→ move · G pickup · 1–6 use item · . wait · P place mode
+        <span>PLACE:</span> click · R rotate · X discard · 1/2/3 select<br>
+        <span>EXPLORE:</span> WASD move · G pickup · 1–6 use · . wait · P place<br>
+        <span>GACHA:</span> C crystal pull · V piece pull
       </div>
 
     </div>
   </div>
 
-  <!-- Game Over overlay -->
+  <!-- Game Over -->
   <div id="game-over">
     <div class="game-over-box">
       <h2>YOU DIED</h2>
       <p id="game-over-depth">Floor 1</p>
       <p id="game-over-seed">Seed: 0</p>
       <button id="btn-restart">NEW GAME</button>
+    </div>
+  </div>
+
+  <!-- Gacha Modal -->
+  <div id="gacha-modal">
+    <div class="gacha-box">
+      <h2>GACHA</h2>
+      <button id="gacha-close">✕</button>
+
+      <div class="gacha-tabs">
+        <button id="gacha-tab-crystal" class="gacha-tab active">⬡ Crystal Gear</button>
+        <button id="gacha-tab-piece"   class="gacha-tab">◈ Piece Unlock</button>
+      </div>
+
+      <!-- Crystal tab -->
+      <div id="gacha-crystal-tab" class="gacha-panel">
+        <div class="gacha-shard-row">
+          <span class="gacha-shard-label">Crystal Shards</span>
+          <span class="gacha-shard-count crystal" id="gacha-crystal-shards">0</span>
+        </div>
+        <div class="gacha-cost-note">Cost: <span id="gacha-crystal-cost">5</span> shards · Rarity: 65% Shard / 28% Crystal / 7% Gem</div>
+        <button id="btn-pull-crystal" class="btn-pull btn-pull-crystal" disabled>⬡ PULL CRYSTAL GEAR</button>
+        <div id="gacha-crystal-result"></div>
+      </div>
+
+      <!-- Piece tab -->
+      <div id="gacha-piece-tab" class="gacha-panel" style="display:none">
+        <div class="gacha-shard-row">
+          <span class="gacha-shard-label">Piece Shards</span>
+          <span class="gacha-shard-count piece" id="gacha-piece-shards">0</span>
+        </div>
+        <div class="gacha-cost-note">Cost: <span id="gacha-piece-cost">2</span> shards · Unlocks a new locked piece template</div>
+        <div class="gacha-cost-note" style="margin-bottom:8px">Earn piece shards by defeating bosses or every 3 floors</div>
+        <button id="btn-pull-piece" class="btn-pull btn-pull-piece" disabled>◈ UNLOCK NEW PIECE</button>
+        <div id="gacha-piece-result"></div>
+      </div>
     </div>
   </div>
 

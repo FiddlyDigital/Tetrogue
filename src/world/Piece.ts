@@ -15,11 +15,12 @@ export enum EnemyType {
 }
 
 export enum ItemType {
-  HEALTH_POTION = 'HEALTH_POTION',
+  HEALTH_POTION   = 'HEALTH_POTION',
   STRENGTH_SCROLL = 'STRENGTH_SCROLL',
-  IRON_SHIELD = 'IRON_SHIELD',
-  GOLD_PILE = 'GOLD_PILE',
-  BOMB = 'BOMB',
+  IRON_SHIELD     = 'IRON_SHIELD',
+  GOLD_PILE       = 'GOLD_PILE',
+  BOMB            = 'BOMB',
+  CRYSTAL_SHARD   = 'CRYSTAL_SHARD',
 }
 
 export interface PieceCell {
@@ -38,6 +39,7 @@ export interface PieceDef {
   cells: PieceCell[];
   boundingW: number;
   boundingH: number;
+  locked?: boolean;
 }
 
 export type Rotation = 0 | 90 | 180 | 270;
@@ -255,6 +257,64 @@ export const PIECE_CATALOGUE: PieceDef[] = [
       floor(0,0), door(1,0), floor(2,0),
       floor(0,1), { localX:1, localY:1, tileType: TileType.STAIR_DOWN, isTrap:false, spawnEnemy:null, spawnItem:null }, floor(2,1),
       wall(0,2), floor(1,2), wall(2,2),
+    ],
+  },
+
+  // ── LOCKED: unlockable via piece gacha ───────────────────────────────────
+
+  {
+    id: 'shard-mine', label: 'Shard Mine', rarity: PieceRarity.UNCOMMON, locked: true,
+    boundingW: 3, boundingH: 3,
+    cells: [
+      wall(0,0), door(1,0), wall(2,0),
+      floor(0,1,{spawnItem: ItemType.CRYSTAL_SHARD}), floor(1,1,{spawnItem: ItemType.CRYSTAL_SHARD}), floor(2,1,{spawnItem: ItemType.CRYSTAL_SHARD}),
+      floor(0,2,{spawnEnemy: EnemyType.RAT}), floor(1,2,{spawnItem: ItemType.CRYSTAL_SHARD}), floor(2,2,{spawnEnemy: EnemyType.RAT}),
+    ],
+  },
+  {
+    id: 'crystal-cavern', label: 'Crystal Cavern', rarity: PieceRarity.RARE, locked: true,
+    boundingW: 4, boundingH: 4,
+    cells: [
+      wall(0,0), door(1,0), floor(2,0), wall(3,0),
+      floor(0,1,{spawnItem: ItemType.CRYSTAL_SHARD}), floor(1,1), floor(2,1), floor(3,1,{spawnItem: ItemType.CRYSTAL_SHARD}),
+      floor(0,2), floor(1,2,{spawnEnemy: EnemyType.SKELETON}), floor(2,2,{spawnItem: ItemType.CRYSTAL_SHARD}), floor(3,2),
+      wall(0,3), floor(1,3,{spawnItem: ItemType.CRYSTAL_SHARD}), floor(2,3), wall(3,3),
+    ],
+  },
+  {
+    id: 'gauntlet-hall', label: 'Gauntlet Hall', rarity: PieceRarity.UNCOMMON, locked: true,
+    boundingW: 6, boundingH: 1,
+    cells: [
+      floor(0,0), floor(1,0,{spawnEnemy: EnemyType.RAT}), floor(2,0,{spawnEnemy: EnemyType.SKELETON}),
+      floor(3,0,{spawnEnemy: EnemyType.SKELETON}), floor(4,0), floor(5,0,{spawnItem: ItemType.HEALTH_POTION}),
+    ],
+  },
+  {
+    id: 'treasure-wyrm', label: 'Wyrm Den', rarity: PieceRarity.RARE, locked: true,
+    boundingW: 4, boundingH: 3,
+    cells: [
+      wall(0,0), door(1,0), door(2,0), wall(3,0),
+      floor(0,1,{spawnItem: ItemType.GOLD_PILE}), floor(1,1,{spawnEnemy: EnemyType.GOLEM}), floor(2,1,{spawnItem: ItemType.GOLD_PILE}), floor(3,1,{spawnItem: ItemType.GOLD_PILE}),
+      wall(0,2), floor(1,2,{spawnItem: ItemType.BOMB}), floor(2,2,{spawnItem: ItemType.CRYSTAL_SHARD}), wall(3,2),
+    ],
+  },
+  {
+    id: 'nexus-chamber', label: 'Nexus', rarity: PieceRarity.RARE, locked: true,
+    boundingW: 5, boundingH: 3,
+    cells: [
+      wall(0,0), floor(1,0), floor(2,0), floor(3,0), wall(4,0),
+      floor(0,1), floor(1,1,{spawnEnemy: EnemyType.SKELETON}), floor(2,1), floor(3,1,{spawnEnemy: EnemyType.SKELETON}), floor(4,1),
+      wall(0,2), floor(1,2,{spawnItem: ItemType.CRYSTAL_SHARD}), floor(2,2), floor(3,2,{spawnItem: ItemType.GOLD_PILE}), wall(4,2),
+    ],
+  },
+  {
+    id: 'elite-shrine', label: 'Elite Shrine', rarity: PieceRarity.RARE, locked: true,
+    boundingW: 3, boundingH: 4,
+    cells: [
+      floor(0,0), door(1,0), floor(2,0),
+      floor(0,1,{spawnItem: ItemType.CRYSTAL_SHARD}), floor(1,1), floor(2,1,{spawnItem: ItemType.CRYSTAL_SHARD}),
+      wall(0,2), floor(1,2), wall(2,2),
+      wall(0,3), floor(1,3,{spawnItem: ItemType.HEALTH_POTION}), wall(2,3),
     ],
   },
 ];

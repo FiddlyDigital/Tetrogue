@@ -13,6 +13,9 @@ import { FOVComputer } from '../utils/fov';
 import { Renderer } from '../ui/Renderer';
 import { HUD } from '../ui/HUD';
 import { PieceUI } from '../ui/PieceUI';
+import { GachaUI } from '../ui/GachaUI';
+import { equipGear, getPassiveEffects } from '../entities/Gear';
+import { pullCrystalGear, pullPieceUnlock, crystalShardDropAmount } from './Gacha';
 import { START_X, START_Y, TILE_SIZE } from './constants';
 
 export enum GameState {
@@ -37,10 +40,12 @@ export class Game {
   private rotation: Rotation = 0;
   private state: GameState = GameState.PLACE_PIECE;
   private ghost: GhostState | null = null;
+  private unlockedPieceIds = new Set<string>();
 
   private renderer: Renderer;
   private hud: HUD;
   private pieceUI: PieceUI;
+  private gachaUI: GachaUI;
   private canvas: HTMLCanvasElement;
 
   private gameOverEl: HTMLElement;
@@ -57,6 +62,10 @@ export class Game {
       ()  => this.handleRotate(),
       ()  => this.handleDiscard(),
     );
+    this.gachaUI = new GachaUI(
+      () => this.handleCrystalPull(),
+      () => this.handlePiecePull(),
+    );
 
     this.gameOverEl      = document.getElementById('game-over')!;
     this.gameOverSeedEl  = document.getElementById('game-over-seed')!;
@@ -64,9 +73,11 @@ export class Game {
 
     document.getElementById('btn-restart')!.addEventListener('click', () => this.newGame());
     document.getElementById('btn-place-done')!.addEventListener('click', () => this.switchToExplore());
+    document.getElementById('btn-gacha-crystal')!.addEventListener('click', () => this.gachaUI.toggle('crystal'));
+    document.getElementById('btn-gacha-piece')!.addEventListener('click', () => this.gachaUI.toggle('piece'));
 
     this.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
-    this.canvas.addEventListener('click',     (e) => this.handleCanvasClick(e));
+    this.canvas.addEventListener('click',     (_e) => this.handleCanvasClick());
     document.addEventListener('keydown',      (e) => this.handleKey(e));
 
     this.newGame();
@@ -74,32 +85,36 @@ export class Game {
   }
 
   private newGame(seed?: number): void {
-    this.rng      = new RNG(seed);
-    this.world    = createWorld(1);
-    this.player   = createPlayer();
-    this.entities = new EntityManager(1);
-    this.queue    = createQueue(1, this.rng);
-    this.fov      = new FOVComputer();
-    this.rotation = 0;
-    this.ghost    = null;
-    this.state    = GameState.PLACE_PIECE;
+    this.rng             = new RNG(seed);
+    this.world           = createWorld(1);
+    this.player          = createPlayer();
+    this.entities        = new EntityManager(1);
+    this.unlockedPieceIds = new Set();
+    this.queue           = createQueue(1, this.rng, this.unlockedPieceIds);
+    this.fov             = new FOVComputer();
+    this.rotation        = 0;
+    this.ghost           = null;
+    this.state           = GameState.PLACE_PIECE;
 
     this.fov.compute(this.world, this.player.x, this.player.y);
     this.hud.clearMessages();
     this.hud.addMessage('Welcome to Tetrogue!');
     this.hud.addMessage('Place pieces then explore.');
+    this.hud.addMessage('Kill enemies for ⬡ crystal shards!');
     this.hud.showSeed(this.rng.getSeed());
     this.hud.update(this.player, this.world.depth);
     this.pieceUI.setRotation(0);
     this.pieceUI.render(this.queue);
+    this.gachaUI.updateShards(0, 0);
     this.gameOverEl.style.display = 'none';
+    this.gachaUI.hide();
     this.updateStatusBar();
   }
 
   private updateStatusBar(): void {
     const labels: Record<GameState, string> = {
       [GameState.PLACE_PIECE]: 'PLACE PIECE — click canvas to place, R to rotate, X to discard',
-      [GameState.EXPLORE]:     'EXPLORE — WASD/arrows to move, 1-6 to use items, G to pick up',
+      [GameState.EXPLORE]:     'EXPLORE — WASD/arrows to move, 1-6 use items, G pickup, C/V gacha',
       [GameState.DESCEND]:     'DESCENDING...',
       [GameState.GAME_OVER]:   'GAME OVER',
     };
@@ -125,11 +140,45 @@ export class Game {
     this.updateStatusBar();
   }
 
+  // ── Gacha ──────────────────────────────────────────────────────────────────
+
+  private handleCrystalPull(): void {
+    const result = pullCrystalGear(this.player, this.rng);
+    if ('error' in result) {
+      this.gachaUI.showError(result.error);
+      return;
+    }
+    const msg = equipGear(this.player, result.gear);
+    this.hud.addMessage(`★ Crystal pull: ${result.gear.name}!`);
+    this.hud.addMessage(msg);
+    this.gachaUI.showCrystalResult(result.gear);
+    this.gachaUI.updateShards(this.player.crystalShards, this.player.pieceShards);
+    this.hud.update(this.player, this.world.depth);
+  }
+
+  private handlePiecePull(): void {
+    const result = pullPieceUnlock(this.player, this.rng, this.unlockedPieceIds);
+    if ('error' in result) {
+      this.gachaUI.showError(result.error);
+      return;
+    }
+    this.hud.addMessage(`◈ Piece unlock: ${result.piece.label}!`);
+    this.hud.addMessage('New piece type added to the pool.');
+    this.gachaUI.showPieceResult(result.piece);
+    this.gachaUI.updateShards(this.player.crystalShards, this.player.pieceShards);
+    this.hud.update(this.player, this.world.depth);
+  }
+
   // ── Input ──────────────────────────────────────────────────────────────────
 
   private handleKey(e: KeyboardEvent): void {
     if (this.state === GameState.GAME_OVER) return;
     if (this.state === GameState.DESCEND) return;
+
+    if (e.key === 'c' || e.key === 'C') { this.gachaUI.toggle('crystal'); return; }
+    if (e.key === 'v' || e.key === 'V') { this.gachaUI.toggle('piece'); return; }
+
+    if (this.gachaUI.isVisible()) return;
 
     if (this.state === GameState.PLACE_PIECE) {
       if (e.key === 'r' || e.key === 'R') { this.handleRotate(); return; }
@@ -149,18 +198,16 @@ export class Game {
         case 'ArrowLeft':  case 'a': case 'h': dx = -1; break;
         case 'ArrowRight': case 'd': case 'l': dx =  1; break;
         case 'g': case 'G': this.handlePickup(); return;
-        case '.': this.endPlayerTurn(); return; // wait
-        case 'p': case 'P': this.switchToPlace(); return; // back to place mode
+        case '.': this.endPlayerTurn(); return;
+        case 'p': case 'P': this.switchToPlace(); return;
       }
       if (dx !== 0 || dy !== 0) {
         e.preventDefault();
         this.handleMove(dx, dy);
+        return;
       }
-      // Item use: 1-6
       const num = parseInt(e.key);
-      if (num >= 1 && num <= 6) {
-        this.handleUseItem(num - 1);
-      }
+      if (num >= 1 && num <= 6) this.handleUseItem(num - 1);
     }
   }
 
@@ -202,7 +249,7 @@ export class Game {
     };
   }
 
-  private handleCanvasClick(_e: MouseEvent): void {
+  private handleCanvasClick(): void {
     if (this.state !== GameState.PLACE_PIECE) return;
     const def = selectedPiece(this.queue);
     if (!def || !this.ghost) return;
@@ -231,7 +278,6 @@ export class Game {
     const ny = this.player.y + dy;
     if (nx < 0 || ny < 0 || nx >= 50 || ny >= 50) return;
     const tile = this.world.grid[ny][nx];
-
     if (!isPassable(tile)) return;
 
     const enemy = this.entities.enemyAt(nx, ny);
@@ -247,13 +293,19 @@ export class Game {
   }
 
   private handleStepEffects(x: number, y: number, tileType: TileType): void {
-    // Auto-pickup gold
-    const item = this.entities.itemAt(x, y);
-    if (item && item.type === ItemType.GOLD_PILE) {
-      const gold = this.rng.getInt(10, 25);
-      this.player.gold += gold;
-      this.entities.removeItem(item.id);
-      this.hud.addMessage(`Picked up ${gold} gold.`);
+    for (const item of this.entities.itemsAt(x, y)) {
+      if (item.type === ItemType.GOLD_PILE) {
+        const gold = this.rng.getInt(10, 25);
+        this.player.gold += gold;
+        this.entities.removeItem(item.id);
+        this.hud.addMessage(`Picked up ${gold} gold.`);
+      } else if (item.type === ItemType.CRYSTAL_SHARD) {
+        const amt = item.value;
+        this.player.crystalShards += amt;
+        this.entities.removeItem(item.id);
+        this.hud.addMessage(`⬡ Collected ${amt} crystal shard${amt > 1 ? 's' : ''}! (${this.player.crystalShards} total)`);
+        this.gachaUI.updateShards(this.player.crystalShards, this.player.pieceShards);
+      }
     }
 
     if (tileType === TileType.TRAP && this.world.grid[y][x].isTrap) {
@@ -270,6 +322,11 @@ export class Game {
   private handlePickup(): void {
     const item = this.entities.itemAt(this.player.x, this.player.y);
     if (!item) { this.hud.addMessage('Nothing here to pick up.'); return; }
+    if (item.type === ItemType.GOLD_PILE || item.type === ItemType.CRYSTAL_SHARD) {
+      this.handleStepEffects(this.player.x, this.player.y, this.world.grid[this.player.y][this.player.x].type);
+      this.endPlayerTurn();
+      return;
+    }
     if (!canPickup(this.player)) { this.hud.addMessage('Inventory full!'); return; }
     this.player.inventory.push(item.type);
     this.entities.removeItem(item.id);
@@ -289,11 +346,12 @@ export class Game {
 
   private applyItem(type: ItemType): void {
     switch (type) {
-      case ItemType.HEALTH_POTION:
+      case ItemType.HEALTH_POTION: {
         const heal = Math.min(this.player.maxHp - this.player.hp, 15);
         this.player.hp += heal;
         this.hud.addMessage(`Drank potion. Healed ${heal} HP.`);
         break;
+      }
       case ItemType.STRENGTH_SCROLL:
         this.player.statusEffects.push({ type: 'STRENGTH', turnsLeft: 10, magnitude: 3 });
         this.hud.addMessage('Strength scroll! +3 ATK for 10 turns.');
@@ -315,7 +373,10 @@ export class Game {
         break;
       }
       case ItemType.GOLD_PILE:
-        this.hud.addMessage('That\'s already gold!');
+        this.hud.addMessage("That's already gold!");
+        break;
+      case ItemType.CRYSTAL_SHARD:
+        this.hud.addMessage('Crystal shards are auto-collected!');
         break;
     }
   }
@@ -324,13 +385,42 @@ export class Game {
     const dmg = Math.max(1, playerEffectiveAtk(this.player) - enemy.def);
     enemy.hp -= dmg;
     this.hud.addMessage(`Hit ${enemy.type} for ${dmg} damage.`);
+
     if (enemy.hp <= 0) {
-      this.entities.removeEnemy(enemy.id);
-      const gold = this.rng.getInt(2, 8);
-      this.player.gold += gold;
-      this.hud.addMessage(`${enemy.type} defeated! +${gold} gold.`);
+      this.onEnemyKilled(enemy);
     } else {
       enemy.isAlerted = true;
+    }
+  }
+
+  private onEnemyKilled(enemy: Enemy): void {
+    this.entities.removeEnemy(enemy.id);
+
+    const gold = this.rng.getInt(2, 8);
+    this.player.gold += gold;
+
+    const passive = getPassiveEffects(this.player.equipment);
+
+    // Lifesteal
+    if (passive.lifeStealOnKill > 0) {
+      const healed = Math.min(passive.lifeStealOnKill, this.player.maxHp - this.player.hp);
+      this.player.hp += healed;
+      if (healed > 0) this.hud.addMessage(`Lifesteal: +${healed} HP.`);
+    }
+
+    // Crystal shard drop
+    const baseShards  = crystalShardDropAmount(enemy.type);
+    const bonusShards = passive.shardBonusOnKill;
+    const totalShards = baseShards + bonusShards;
+    this.entities.spawnItem(ItemType.CRYSTAL_SHARD, enemy.x, enemy.y, totalShards);
+
+    this.hud.addMessage(`${enemy.type} defeated! +${gold} gold. ⬡×${totalShards} shard${totalShards > 1 ? 's' : ''} dropped.`);
+
+    // Piece shards for boss kill
+    if (enemy.type === 'LICH') {
+      this.player.pieceShards += 2;
+      this.hud.addMessage('◈ Boss slain! +2 piece shards!');
+      this.gachaUI.updateShards(this.player.crystalShards, this.player.pieceShards);
     }
   }
 
@@ -359,7 +449,6 @@ export class Game {
       if (enemy.turnDebt % 2 !== 0) return;
     }
 
-    // Alert check via simple distance (enemies within FOV_RADIUS alert)
     if (!enemy.isAlerted) {
       const dist = Math.abs(enemy.x - this.player.x) + Math.abs(enemy.y - this.player.y);
       if (dist <= 6) {
@@ -370,17 +459,21 @@ export class Game {
 
     if (!enemy.isAlerted) return;
 
-    // Adjacent: attack
     const dx = this.player.x - enemy.x;
     const dy = this.player.y - enemy.y;
     if (Math.abs(dx) + Math.abs(dy) === 1) {
+      // Dodge check
+      const passive = getPassiveEffects(this.player.equipment);
+      if (passive.dodgeChance > 0 && this.rng.getUniform() < passive.dodgeChance) {
+        this.hud.addMessage(`Dodged ${enemy.type}'s attack!`);
+        return;
+      }
       const dmg = Math.max(1, enemy.atk - this.player.def);
       this.player.hp -= dmg;
       this.hud.addMessage(`${enemy.type} hits you for ${dmg} damage!`);
       return;
     }
 
-    // Pathfind
     const passable = (x: number, y: number) => {
       if (x < 0 || y < 0 || x >= 50 || y >= 50) return false;
       if (!isPassable(this.world.grid[y][x])) return false;
@@ -405,14 +498,20 @@ export class Game {
 
   private descend(): void {
     this.state = GameState.DESCEND;
-    this.hud.addMessage(`Descending to floor ${this.world.depth + 1}...`);
-
     const newDepth = this.world.depth + 1;
+    this.hud.addMessage(`Descending to floor ${newDepth}...`);
+
+    // Piece shard reward every 3 floors
+    if (newDepth % 3 === 0) {
+      this.player.pieceShards += 1;
+      this.hud.addMessage(`◈ Floor milestone! +1 piece shard. (${this.player.pieceShards} total)`);
+    }
+
     this.world    = createWorld(newDepth);
     this.world.depth = newDepth;
     this.entities = new EntityManager(newDepth);
     this.entities.setDepth(newDepth);
-    this.queue    = createQueue(newDepth, this.rng);
+    this.queue    = createQueue(newDepth, this.rng, this.unlockedPieceIds);
     this.fov      = new FOVComputer();
     this.player.x = START_X;
     this.player.y = START_Y;
@@ -420,6 +519,7 @@ export class Game {
 
     this.fov.compute(this.world, this.player.x, this.player.y);
     this.hud.update(this.player, newDepth);
+    this.gachaUI.updateShards(this.player.crystalShards, this.player.pieceShards);
     this.hud.addMessage(`Floor ${newDepth}. Place a piece to continue.`);
     this.pieceUI.setRotation(0);
     this.pieceUI.render(this.queue);
