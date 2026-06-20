@@ -1,0 +1,13 @@
+export const TILE_SIZE = 32;
+export const GRID_W = 50;
+export const GRID_H = 50;
+export const VIEWPORT_TILES_W = 25;
+export const VIEWPORT_TILES_H = 18;
+export const CANVAS_W = TILE_SIZE * VIEWPORT_TILES_W; // 800
+export const CANVAS_H = TILE_SIZE * VIEWPORT_TILES_H; // 576
+export const FOV_RADIUS = 8;
+export const INVENTORY_MAX = 6;
+export const QUEUE_SIZE = 3;
+export const FLOOR_POOL_SIZE = 30;
+export const START_X = 25;
+export const START_Y = 25;

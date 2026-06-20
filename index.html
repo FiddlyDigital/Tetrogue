@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tetrogue</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #111;
+      color: #ccc;
+      font-family: 'Courier New', monospace;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    header {
+      background: #1a1a2a;
+      border-bottom: 1px solid #333;
+      padding: 6px 16px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    header h1 {
+      font-size: 1.2rem;
+      color: #8af;
+      letter-spacing: 3px;
+    }
+
+    #hud-status {
+      font-size: 0.75rem;
+      color: #888;
+      flex: 1;
+    }
+
+    #hud-seed {
+      font-size: 0.7rem;
+      color: #555;
+    }
+
+    .main {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* ── Canvas panel ──────────────────────────────────────────── */
+    #canvas-wrap {
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    #game-canvas {
+      display: block;
+      max-width: 100%;
+      cursor: crosshair;
+    }
+
+    /* ── Sidebar ───────────────────────────────────────────────── */
+    #sidebar {
+      width: 260px;
+      flex-shrink: 0;
+      background: #161622;
+      border-left: 1px solid #2a2a3a;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      padding: 8px;
+      gap: 8px;
+    }
+
+    .panel-title {
+      font-size: 0.7rem;
+      letter-spacing: 2px;
+      color: #556;
+      text-transform: uppercase;
+      border-bottom: 1px solid #222;
+      padding-bottom: 4px;
+      margin-bottom: 4px;
+    }
+
+    /* ── Stats ─────────────────────────────────────────────────── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 3px 10px;
+      font-size: 0.8rem;
+    }
+
+    .stat-label { color: #556; }
+    .stat-value { color: #bce; font-weight: bold; }
+
+    #hp-bar-wrap {
+      background: #222;
+      height: 6px;
+      border-radius: 3px;
+      margin-top: 4px;
+    }
+
+    #hud-hp-bar {
+      height: 6px;
+      border-radius: 3px;
+      transition: width 0.2s, background 0.2s;
+    }
+
+    /* ── Piece Queue ───────────────────────────────────────────── */
+    #piece-queue {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .piece-card {
+      background: #1e1e2e;
+      border: 2px solid #555;
+      border-radius: 4px;
+      padding: 6px;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+    }
+
+    .piece-card:hover { background: #252535; }
+    .piece-card.selected { background: #222840; border-color: #60a0ff !important; }
+
+    .piece-label {
+      font-size: 0.7rem;
+      color: #8af;
+      letter-spacing: 1px;
+      margin-bottom: 6px;
+    }
+
+    .piece-preview-grid {
+      position: relative;
+      margin: 0 auto;
+    }
+
+    .piece-preview-cell {
+      position: absolute;
+      border: 1px solid #111;
+    }
+
+    .piece-dot {
+      position: absolute;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      top: 3px;
+      right: 3px;
+    }
+
+    .enemy-dot { background: #e44; }
+    .item-dot  { background: #fc0; left: 3px; }
+
+    .piece-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .piece-controls button {
+      background: #252535;
+      color: #bce;
+      border: 1px solid #444;
+      border-radius: 3px;
+      padding: 5px 8px;
+      font-family: inherit;
+      font-size: 0.75rem;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .piece-controls button:hover { background: #333355; }
+
+    .piece-note {
+      font-size: 0.7rem;
+      color: #c8a;
+      padding: 2px 4px;
+    }
+
+    #btn-place-done {
+      background: #1a3a1a;
+      color: #6f6;
+      border: 1px solid #4a4;
+      border-radius: 3px;
+      padding: 6px 10px;
+      font-family: inherit;
+      font-size: 0.8rem;
+      cursor: pointer;
+      display: none;
+      margin-top: 4px;
+    }
+
+    #btn-place-done:hover { background: #254025; }
+
+    /* ── Inventory ─────────────────────────────────────────────── */
+    #hud-inventory {
+      font-size: 0.75rem;
+      color: #acc;
+    }
+
+    #hud-inventory .inv-item {
+      padding: 2px 0;
+      border-bottom: 1px solid #1a1a2a;
+    }
+
+    #hud-inventory .empty { color: #445; }
+
+    /* ── Message Log ───────────────────────────────────────────── */
+    #hud-log {
+      font-size: 0.72rem;
+      color: #9ab;
+      line-height: 1.5;
+      max-height: 130px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    #hud-log div { border-bottom: 1px solid #1a1a24; padding: 1px 0; }
+    #hud-log div:last-child { color: #cde; }
+
+    /* ── Game Over overlay ─────────────────────────────────────── */
+    #game-over {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .game-over-box {
+      background: #1a1a2a;
+      border: 2px solid #a44;
+      border-radius: 8px;
+      padding: 32px 48px;
+      text-align: center;
+    }
+
+    .game-over-box h2 {
+      font-size: 2rem;
+      color: #e44;
+      letter-spacing: 4px;
+      margin-bottom: 12px;
+    }
+
+    .game-over-box p { color: #88a; margin-bottom: 6px; font-size: 0.9rem; }
+
+    #btn-restart {
+      margin-top: 20px;
+      background: #1a3a1a;
+      color: #6f6;
+      border: 1px solid #4a4;
+      border-radius: 4px;
+      padding: 10px 24px;
+      font-family: inherit;
+      font-size: 0.9rem;
+      cursor: pointer;
+      letter-spacing: 2px;
+    }
+
+    #btn-restart:hover { background: #254025; }
+
+    /* Keys legend */
+    .keys { font-size: 0.65rem; color: #446; margin-top: 8px; line-height: 1.6; }
+    .keys span { color: #668; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>TETROGUE</h1>
+    <div id="hud-status">Place a piece to start.</div>
+    <div id="hud-seed"></div>
+  </header>
+
+  <div class="main">
+
+    <div id="canvas-wrap">
+      <canvas id="game-canvas"></canvas>
+    </div>
+
+    <div id="sidebar">
+
+      <!-- Stats -->
+      <div>
+        <div class="panel-title">Stats — Floor <span id="hud-depth">1</span></div>
+        <div class="stats-grid">
+          <span class="stat-label">HP</span>  <span class="stat-value" id="hud-hp">20/20</span>
+          <span class="stat-label">ATK</span> <span class="stat-value" id="hud-atk">5</span>
+          <span class="stat-label">DEF</span> <span class="stat-value" id="hud-def">2</span>
+          <span class="stat-label">GOLD</span><span class="stat-value" id="hud-gold">0</span>
+        </div>
+        <div id="hp-bar-wrap"><div id="hud-hp-bar" style="width:100%"></div></div>
+      </div>
+
+      <!-- Piece Queue -->
+      <div>
+        <div class="panel-title">Piece Queue</div>
+        <div id="piece-queue"></div>
+        <button id="btn-place-done">Done Placing → Explore</button>
+      </div>
+
+      <!-- Inventory -->
+      <div>
+        <div class="panel-title">Inventory (1–6 to use)</div>
+        <div id="hud-inventory"><span class="empty">empty</span></div>
+      </div>
+
+      <!-- Log -->
+      <div style="flex:1; display:flex; flex-direction:column; min-height:0">
+        <div class="panel-title">Log</div>
+        <div id="hud-log"></div>
+      </div>
+
+      <!-- Keys -->
+      <div class="keys">
+        <span>PLACE:</span> click map · R rotate · X discard · 1/2/3 select<br>
+        <span>EXPLORE:</span> WASD/↑↓←→ move · G pickup · 1–6 use item · . wait · P place mode
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Game Over overlay -->
+  <div id="game-over">
+    <div class="game-over-box">
+      <h2>YOU DIED</h2>
+      <p id="game-over-depth">Floor 1</p>
+      <p id="game-over-seed">Seed: 0</p>
+      <button id="btn-restart">NEW GAME</button>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
