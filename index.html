@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
   <title>Tetrogue</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -299,6 +299,77 @@
     /* Keys */
     .keys { font-size: 0.65rem; color: #446; margin-top: 4px; line-height: 1.6; }
     .keys span { color: #668; }
+
+    /* ── D-Pad ──────────────────────────────────────────────────── */
+    #dpad {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      padding: 6px 0;
+      background: #0a0a18;
+      border-top: 1px solid #1e1e2e;
+      border-bottom: 1px solid #1e1e2e;
+      flex-shrink: 0;
+    }
+
+    .dpad-row { display: flex; gap: 2px; }
+
+    .dpad-btn {
+      width: 52px;
+      height: 52px;
+      background: rgba(30, 30, 60, 0.9);
+      color: #aaf;
+      border: 2px solid #335;
+      border-radius: 8px;
+      font-size: 1.1rem;
+      cursor: pointer;
+      font-family: inherit;
+      touch-action: manipulation;
+      user-select: none;
+    }
+
+    .dpad-btn:active { background: rgba(60, 60, 120, 0.95); }
+
+    /* ── Mobile Layout ──────────────────────────────────────────── */
+    @media (max-width: 768px) {
+      header { padding: 4px 10px; }
+      header h1 { font-size: 1rem; letter-spacing: 2px; }
+      #hud-status { font-size: 0.65rem; }
+
+      .main { flex-direction: column; overflow-y: auto; }
+
+      #canvas-wrap { width: 100%; flex-shrink: 0; }
+
+      #game-canvas { width: 100% !important; height: auto !important; }
+
+      #sidebar {
+        width: 100%;
+        flex-shrink: 0;
+        border-left: none;
+        border-top: 1px solid #2a2a3a;
+        max-height: none;
+      }
+
+      .piece-controls button,
+      #btn-place-done,
+      .gacha-btn,
+      .btn-pull {
+        min-height: 44px;
+        font-size: 0.85rem;
+      }
+
+      .gacha-btn { padding: 8px 4px; }
+
+      .piece-card { padding: 8px; }
+
+      .keys { display: none; }
+    }
+
+    /* Always hide d-pad on desktop regardless of JS */
+    @media (min-width: 769px) {
+      #dpad { display: none !important; }
+    }
   </style>
 </head>
 <body>
@@ -312,6 +383,21 @@
   <div class="main">
     <div id="canvas-wrap">
       <canvas id="game-canvas"></canvas>
+    </div>
+
+    <!-- D-Pad (mobile EXPLORE controls, shown/hidden by JS) -->
+    <div id="dpad">
+      <div class="dpad-row">
+        <button id="dpad-up" class="dpad-btn">▲</button>
+      </div>
+      <div class="dpad-row">
+        <button id="dpad-left"  class="dpad-btn">◀</button>
+        <button id="dpad-wait"  class="dpad-btn">·</button>
+        <button id="dpad-right" class="dpad-btn">▶</button>
+      </div>
+      <div class="dpad-row">
+        <button id="dpad-down" class="dpad-btn">▼</button>
+      </div>
     </div>
 
     <div id="sidebar">

@@ -16,7 +16,7 @@ import { PieceUI } from '../ui/PieceUI';
 import { GachaUI } from '../ui/GachaUI';
 import { equipGear, getPassiveEffects } from '../entities/Gear';
 import { pullCrystalGear, pullPieceUnlock, crystalShardDropAmount } from './Gacha';
-import { START_X, START_Y, TILE_SIZE } from './constants';
+import { START_X, START_Y, CANVAS_W, CANVAS_H, VIEWPORT_TILES_W, VIEWPORT_TILES_H } from './constants';
 
 export enum GameState {
   PLACE_PIECE = 'PLACE_PIECE',
@@ -77,8 +77,12 @@ export class Game {
     document.getElementById('btn-gacha-piece')!.addEventListener('click', () => this.gachaUI.toggle('piece'));
 
     this.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
-    this.canvas.addEventListener('click',     (_e) => this.handleCanvasClick());
+    this.canvas.addEventListener('click',     () => this.doPlacement());
     document.addEventListener('keydown',      (e) => this.handleKey(e));
+
+    this.setupTouchHandlers();
+    this.setupDpad();
+    this.setupResize();
 
     this.newGame();
     this.loop();
@@ -113,14 +117,21 @@ export class Game {
 
   private updateStatusBar(): void {
     const labels: Record<GameState, string> = {
-      [GameState.PLACE_PIECE]: 'PLACE PIECE — click canvas to place, R to rotate, X to discard',
-      [GameState.EXPLORE]:     'EXPLORE — WASD/arrows to move, 1-6 use items, G pickup, C/V gacha',
+      [GameState.PLACE_PIECE]: 'PLACE PIECE — tap/click canvas to place, R to rotate, X to discard',
+      [GameState.EXPLORE]:     'EXPLORE — WASD/arrows/d-pad to move, 1-6 use items, G pickup, C/V gacha',
       [GameState.DESCEND]:     'DESCENDING...',
       [GameState.GAME_OVER]:   'GAME OVER',
     };
     this.hud.setStatus(labels[this.state]);
     document.getElementById('btn-place-done')!.style.display =
       this.state === GameState.PLACE_PIECE ? 'inline-block' : 'none';
+    this.updateDpad();
+  }
+
+  private updateDpad(): void {
+    const el = document.getElementById('dpad');
+    if (!el) return;
+    el.style.display = this.state === GameState.EXPLORE ? 'flex' : 'none';
   }
 
   private switchToExplore(): void {
@@ -172,27 +183,33 @@ export class Game {
   // ── Input ──────────────────────────────────────────────────────────────────
 
   private handleKey(e: KeyboardEvent): void {
+    const arrowKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
+    if (arrowKeys.includes(e.key)) e.preventDefault();
+    this.processKey(e.key);
+  }
+
+  private processKey(key: string): void {
     if (this.state === GameState.GAME_OVER) return;
     if (this.state === GameState.DESCEND) return;
 
-    if (e.key === 'c' || e.key === 'C') { this.gachaUI.toggle('crystal'); return; }
-    if (e.key === 'v' || e.key === 'V') { this.gachaUI.toggle('piece'); return; }
+    if (key === 'c' || key === 'C') { this.gachaUI.toggle('crystal'); return; }
+    if (key === 'v' || key === 'V') { this.gachaUI.toggle('piece'); return; }
 
     if (this.gachaUI.isVisible()) return;
 
     if (this.state === GameState.PLACE_PIECE) {
-      if (e.key === 'r' || e.key === 'R') { this.handleRotate(); return; }
-      if (e.key === 'x' || e.key === 'X') { this.handleDiscard(); return; }
-      if (e.key === '1') { this.handleSelectPiece(0); return; }
-      if (e.key === '2') { this.handleSelectPiece(1); return; }
-      if (e.key === '3') { this.handleSelectPiece(2); return; }
-      if (e.key === 'Enter' || e.key === ' ') { this.switchToExplore(); return; }
+      if (key === 'r' || key === 'R') { this.handleRotate(); return; }
+      if (key === 'x' || key === 'X') { this.handleDiscard(); return; }
+      if (key === '1') { this.handleSelectPiece(0); return; }
+      if (key === '2') { this.handleSelectPiece(1); return; }
+      if (key === '3') { this.handleSelectPiece(2); return; }
+      if (key === 'Enter' || key === ' ') { this.switchToExplore(); return; }
       return;
     }
 
     if (this.state === GameState.EXPLORE) {
       let dx = 0, dy = 0;
-      switch (e.key) {
+      switch (key) {
         case 'ArrowUp':    case 'w': case 'k': dy = -1; break;
         case 'ArrowDown':  case 's': case 'j': dy =  1; break;
         case 'ArrowLeft':  case 'a': case 'h': dx = -1; break;
@@ -202,11 +219,10 @@ export class Game {
         case 'p': case 'P': this.switchToPlace(); return;
       }
       if (dx !== 0 || dy !== 0) {
-        e.preventDefault();
         this.handleMove(dx, dy);
         return;
       }
-      const num = parseInt(e.key);
+      const num = parseInt(key);
       if (num >= 1 && num <= 6) this.handleUseItem(num - 1);
     }
   }
@@ -234,22 +250,27 @@ export class Game {
     this.pieceUI.render(this.queue);
   }
 
-  private handleMouseMove(e: MouseEvent): void {
-    if (this.state !== GameState.PLACE_PIECE) { this.ghost = null; return; }
+  private clientToWorldTile(clientX: number, clientY: number): { wx: number; wy: number } | null {
     const rect = this.canvas.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return null;
     const scaleX = this.canvas.width / rect.width;
     const scaleY = this.canvas.height / rect.height;
-    const mx = (e.clientX - rect.left) * scaleX;
-    const my = (e.clientY - rect.top)  * scaleY;
-    const tx = Math.floor(mx / TILE_SIZE);
-    const ty = Math.floor(my / TILE_SIZE);
-    this.ghost = {
-      cursorWX: this.renderer.cameraX + tx,
-      cursorWY: this.renderer.cameraY + ty,
+    const mx = (clientX - rect.left) * scaleX;
+    const my = (clientY - rect.top)  * scaleY;
+    const ts = this.renderer.tileSize;
+    return {
+      wx: this.renderer.cameraX + Math.floor(mx / ts),
+      wy: this.renderer.cameraY + Math.floor(my / ts),
     };
   }
 
-  private handleCanvasClick(): void {
+  private handleMouseMove(e: MouseEvent): void {
+    if (this.state !== GameState.PLACE_PIECE) { this.ghost = null; return; }
+    const pos = this.clientToWorldTile(e.clientX, e.clientY);
+    if (pos) this.ghost = { cursorWX: pos.wx, cursorWY: pos.wy };
+  }
+
+  private doPlacement(): void {
     if (this.state !== GameState.PLACE_PIECE) return;
     const def = selectedPiece(this.queue);
     if (!def || !this.ghost) return;
@@ -269,6 +290,58 @@ export class Game {
     this.pieceUI.render(this.queue);
     this.hud.update(this.player, this.world.depth);
     this.switchToExplore();
+  }
+
+  private setupTouchHandlers(): void {
+    this.canvas.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      if (this.state !== GameState.PLACE_PIECE) return;
+      const t = e.touches[0];
+      if (!t) return;
+      const pos = this.clientToWorldTile(t.clientX, t.clientY);
+      if (pos) this.ghost = { cursorWX: pos.wx, cursorWY: pos.wy };
+    }, { passive: false });
+
+    this.canvas.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      if (this.state !== GameState.PLACE_PIECE) return;
+      const t = e.changedTouches[0];
+      if (!t) return;
+      const pos = this.clientToWorldTile(t.clientX, t.clientY);
+      if (pos) this.ghost = { cursorWX: pos.wx, cursorWY: pos.wy };
+      this.doPlacement();
+    }, { passive: false });
+  }
+
+  private setupDpad(): void {
+    const dpadMap: Record<string, string> = {
+      'dpad-up':    'ArrowUp',
+      'dpad-down':  'ArrowDown',
+      'dpad-left':  'ArrowLeft',
+      'dpad-right': 'ArrowRight',
+      'dpad-wait':  '.',
+    };
+    for (const [id, key] of Object.entries(dpadMap)) {
+      document.getElementById(id)?.addEventListener('click', () => this.processKey(key));
+    }
+  }
+
+  private setupResize(): void {
+    const doResize = () => {
+      const mobile = window.innerWidth <= 768;
+      let w: number, h: number;
+      if (mobile) {
+        w = window.innerWidth;
+        const aspect = VIEWPORT_TILES_H / VIEWPORT_TILES_W;
+        h = Math.min(Math.floor(w * aspect), Math.floor(window.innerHeight * 0.45));
+      } else {
+        w = CANVAS_W;
+        h = CANVAS_H;
+      }
+      this.renderer.resize(Math.max(w, 160), Math.max(h, 120));
+    };
+    window.addEventListener('resize', doResize);
+    doResize();
   }
 
   // ── Player Actions ─────────────────────────────────────────────────────────
